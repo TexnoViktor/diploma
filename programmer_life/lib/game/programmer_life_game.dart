@@ -9,7 +9,7 @@ import 'components/player.dart';
 import 'components/resource_bar.dart';
 import 'components/interactive_zone.dart';
 
-class ProgrammerLifeGame extends FlameGame with HasTappables, HasDraggables, HasCollisionDetection {
+class ProgrammerLifeGame extends FlameGame with TapCallbacks, DragCallbacks, HasCollisionDetection {
   late final GameState gameState;
   late final Player player;
   late final OfficeMap officeMap;
@@ -28,6 +28,7 @@ class ProgrammerLifeGame extends FlameGame with HasTappables, HasDraggables, Has
   
   // Таймер рівня
   late final Timer levelTimer;
+  late final Timer randomEventTimer;
   
   final String playerType; // Тип гравця з профорієнтаційного тесту
   
@@ -131,24 +132,28 @@ class ProgrammerLifeGame extends FlameGame with HasTappables, HasDraggables, Has
   }
   
   @override
-  void update(double dt) {
-    super.update(dt);
-    
-    levelTimer.update(dt);
-    
-    // Оновлення руху гравця на основі джойстика
-    if (joystick.direction != JoystickDirection.idle) {
-      player.move(joystick.relativeDelta * player.moveSpeed * dt);
-    }
-    
-    // Оновлення ресурсних індикаторів
-    energyBar.currentValue = gameState.energy;
-    stressBar.currentValue = gameState.stress;
-    codeProgressBar.currentValue = gameState.codeProgress;
-    
-    // Перевірка умов перемоги/поразки
-    _checkGameConditions();
+void update(double dt) {
+  super.update(dt);
+  
+  levelTimer.update(dt);
+  randomEventTimer.update(dt); // Додаємо оновлення таймера випадкових подій
+  
+  // Оновлення руху гравця на основі джойстика
+  if (joystick.direction != JoystickDirection.idle) {
+    player.move(joystick.relativeDelta * player.moveSpeed * dt);
   }
+  
+  // Оновлення ресурсних індикаторів
+  energyBar.currentValue = gameState.energy;
+  stressBar.currentValue = gameState.stress;
+  codeProgressBar.currentValue = gameState.codeProgress;
+  
+  // Оновлення стану гри (додаємо цей виклик)
+  gameState.update(dt);
+  
+  // Перевірка умов перемоги/поразки
+  _checkGameConditions();
+}
   
   void _onTimerTick() {
     // Коли таймер рівня закінчується, енергія починає витрачатись додатково
@@ -156,15 +161,16 @@ class ProgrammerLifeGame extends FlameGame with HasTappables, HasDraggables, Has
   }
   
   void _setupRandomEvents() {
-    // Налаштування випадкових подій (кожні 2-3 хвилини)
-    final randomEventTimer = Timer(
-      120 + (60 * gameState.random.nextDouble()),
-      onTick: _triggerRandomEvent,
-      repeat: true,
-    );
-    
-    add(randomEventTimer);
-  }
+  // Налаштування випадкових подій (кожні 2-3 хвилини)
+  randomEventTimer = Timer(
+    120 + (60 * gameState.random.nextDouble()),
+    onTick: _triggerRandomEvent,
+    repeat: true,
+  );
+  
+  // Не додаємо таймер через add(), бо Timer не є компонентом
+  // Замість цього, ми будемо його оновлювати в методі update()
+}
   
   void _triggerRandomEvent() {
     // Після закінчення основного часу випадкові події не відбуваються

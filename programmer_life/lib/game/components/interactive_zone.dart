@@ -1,8 +1,9 @@
+// lib/game/components/interactive_zone.dart
 import 'package:flame/components.dart';
-import 'package:flame/input.dart';
+import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 
-class InteractiveZone extends PositionComponent with Tappable {
+class InteractiveZone extends PositionComponent with TapCallbacks {
   final String zoneName;
   final Function onInteract;
   
@@ -14,7 +15,7 @@ class InteractiveZone extends PositionComponent with Tappable {
   }) : super(position: position, size: size);
   
   @override
-  bool onTapDown(TapDownInfo info) {
+  bool onTapDown(TapDownEvent event) {
     onInteract();
     return true;
   }
