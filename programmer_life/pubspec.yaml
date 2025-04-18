@@ -23,8 +23,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/workplace.png
-    - assets/images/break_room.png
+    - assets/images/workplace_idle.png
+    - assets/images/workplace_coding.png
+    - assets/images/workplace_break.png
+    - assets/images/breakroom_idle.png
+    - assets/images/breakroom_active.png
     - assets/images/conference_room.png
   fonts:
     - family: RobotoMono
