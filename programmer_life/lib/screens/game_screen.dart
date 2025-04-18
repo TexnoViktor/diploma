@@ -6,13 +6,9 @@ import 'dart:async';
 import 'dart:math';
 import '../providers/game_state_provider.dart';
 import '../widgets/resource_indicator.dart';
-import '../widgets/event_dialog.dart';
 import '../widgets/qte_dialog.dart';
 import '../widgets/pause_menu.dart';
-import '../widgets/powerup_button.dart';
-import '../widgets/workplace_tab.dart';
-import '../widgets/break_room_tab.dart';
-import '../widgets/conference_room_tab.dart';
+
 
 class GameScreen extends StatefulWidget {
   @override
@@ -23,7 +19,6 @@ class _GameScreenState extends State<GameScreen>
     with SingleTickerProviderStateMixin {
   final FocusNode _keyboardFocusNode = FocusNode();
   Timer? _eventTimer;
-  Timer? _gameTimer;
   Timer? _timerUpdateTimer;
   List<String> _eventLog = [];
   bool _isWorking = false;
@@ -732,6 +727,7 @@ class _GameScreenState extends State<GameScreen>
                                     style: ElevatedButton.styleFrom(
                                       minimumSize: Size(double.infinity, 50),
                                       backgroundColor: Colors.blue,
+                                      foregroundColor: Colors.white,
                                     ),
                                   ),
                                   SizedBox(height: 12),
@@ -889,6 +885,7 @@ class _GameScreenState extends State<GameScreen>
                                               minimumSize:
                                                   Size(double.infinity, 50),
                                               backgroundColor: Colors.brown,
+                                              foregroundColor: Colors.white,
                                             ),
                                           ),
                                           SizedBox(height: 12),
@@ -905,6 +902,7 @@ class _GameScreenState extends State<GameScreen>
                                               minimumSize:
                                                   Size(double.infinity, 50),
                                               backgroundColor: Colors.orange,
+                                              foregroundColor: Colors.white,
                                             ),
                                           ),
                                           SizedBox(height: 12),
@@ -921,6 +919,7 @@ class _GameScreenState extends State<GameScreen>
                                               minimumSize:
                                                   Size(double.infinity, 50),
                                               backgroundColor: Colors.purple,
+                                              foregroundColor: Colors.white,
                                             ),
                                           ),
                                           SizedBox(height: 12),
@@ -936,6 +935,7 @@ class _GameScreenState extends State<GameScreen>
                                               minimumSize:
                                                   Size(double.infinity, 50),
                                               backgroundColor: Colors.green,
+                                              foregroundColor: Colors.white,
                                             ),
                                           ),
                                           SizedBox(height: 12),
@@ -952,6 +952,7 @@ class _GameScreenState extends State<GameScreen>
                                               minimumSize:
                                                   Size(double.infinity, 50),
                                               backgroundColor: Colors.indigo,
+                                              foregroundColor: Colors.white,
                                             ),
                                           ),
                                         ],
@@ -1074,6 +1075,7 @@ class _GameScreenState extends State<GameScreen>
                                               minimumSize:
                                                   Size(double.infinity, 50),
                                               backgroundColor: Colors.blue,
+                                              foregroundColor: Colors.white,
                                             ),
                                           ),
                                           SizedBox(height: 12),
@@ -1094,6 +1096,7 @@ class _GameScreenState extends State<GameScreen>
                                               minimumSize:
                                                   Size(double.infinity, 50),
                                               backgroundColor: Colors.green,
+                                              foregroundColor: Colors.white,
                                             ),
                                           ),
                                           SizedBox(height: 12),
@@ -1113,6 +1116,7 @@ class _GameScreenState extends State<GameScreen>
                                               minimumSize:
                                                   Size(double.infinity, 50),
                                               backgroundColor: Colors.purple,
+                                              foregroundColor: Colors.white,
                                             ),
                                           ),
                                           SizedBox(height: 12),
@@ -1133,6 +1137,7 @@ class _GameScreenState extends State<GameScreen>
                                               minimumSize:
                                                   Size(double.infinity, 50),
                                               backgroundColor: Colors.amber,
+                                              foregroundColor: Colors.white,
                                             ),
                                           ),
                                         ],
