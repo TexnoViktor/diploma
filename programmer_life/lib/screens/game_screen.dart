@@ -8,15 +8,16 @@ import '../providers/game_state_provider.dart';
 import '../widgets/resource_indicator.dart';
 import '../widgets/qte_dialog.dart';
 import '../widgets/pause_menu.dart';
-
+import '../widgets/workplace_tab.dart';
+import '../widgets/break_room_tab.dart';
+import '../widgets/conference_room_tab.dart';
 
 class GameScreen extends StatefulWidget {
   @override
   _GameScreenState createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen>
-    with SingleTickerProviderStateMixin {
+class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateMixin {
   final FocusNode _keyboardFocusNode = FocusNode();
   Timer? _eventTimer;
   Timer? _timerUpdateTimer;
@@ -26,20 +27,20 @@ class _GameScreenState extends State<GameScreen>
   bool _coffeeBreakActive = false;
   Timer? _coffeeBreakTimer;
   String _formattedTime = "6:00";
-
+  
   // Tab controller
   late TabController _tabController;
-
+  
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_handleTabChange);
-
+    
     _initGame();
     _startTimerUpdates();
   }
-
+  
   void _handleTabChange() {
     // When changing tabs, pause any ongoing work
     if (_isWorking && _tabController.index != 0) {
@@ -48,7 +49,7 @@ class _GameScreenState extends State<GameScreen>
       });
       _addToEventLog('Ви тимчасово припинили писати код.');
     }
-
+    
     // Request keyboard focus when returning to workplace tab
     if (_tabController.index == 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -56,43 +57,42 @@ class _GameScreenState extends State<GameScreen>
       });
     }
   }
-
+  
   void _initGame() {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+    
     // Start a new day if game is not already active
     if (!gameState.isGameActive) {
       gameState.startNewDay();
     }
-
+    
     // Start event timer - random events occur periodically
     _startEventTimer();
-
+    
     // Add initial event log
-    _addToEventLog(
-        'День ${gameState.currentDay} почався! Ви на стадії ${_getStageTitle(gameState.currentStage)}.');
-
+    _addToEventLog('День ${gameState.currentDay} почався! Ви на стадії ${_getStageTitle(gameState.currentStage)}.');
+    
     // Ensure keyboard focus
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _keyboardFocusNode.requestFocus();
     });
   }
-
+  
   void _startTimerUpdates() {
     // Update timer every second
     _timerUpdateTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+      
       if (gameState.isGameActive && !gameState.isPaused) {
         gameState.updateRemainingTime();
-
+        
         // Format time as MM:SS
         final minutes = (gameState.remainingSeconds / 60).floor();
         final seconds = gameState.remainingSeconds % 60;
         setState(() {
           _formattedTime = '$minutes:${seconds.toString().padLeft(2, '0')}';
         });
-
+        
         // Check if time is up
         if (gameState.remainingSeconds <= 0) {
           _endDay(false, "Час вийшов!");
@@ -100,7 +100,7 @@ class _GameScreenState extends State<GameScreen>
       }
     });
   }
-
+  
   String _getStageTitle(CareerStage stage) {
     switch (stage) {
       case CareerStage.Junior:
@@ -113,14 +113,14 @@ class _GameScreenState extends State<GameScreen>
         return '';
     }
   }
-
+  
   void _startEventTimer() {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+    
     // Event frequency depends on career stage
     int minInterval = 15; // seconds
     int maxInterval = 30; // seconds
-
+    
     switch (gameState.currentStage) {
       case CareerStage.Junior:
         minInterval = 20;
@@ -135,32 +135,31 @@ class _GameScreenState extends State<GameScreen>
         maxInterval = 20;
         break;
     }
-
+    
     // Schedule next event
     _eventTimer?.cancel();
     _eventTimer = Timer(
-      Duration(
-          seconds: minInterval + Random().nextInt(maxInterval - minInterval)),
+      Duration(seconds: minInterval + Random().nextInt(maxInterval - minInterval)),
       _triggerRandomEvent,
     );
   }
-
+  
   void _triggerRandomEvent() {
     if (!mounted) return;
-
+    
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+    
     // Don't trigger events if game is paused or on coffee break
     if (gameState.isPaused || _coffeeBreakActive) {
       _startEventTimer();
       return;
     }
-
+    
     final random = Random();
-
+    
     // Select random event based on probabilities
     final eventRoll = random.nextDouble();
-
+    
     if (_tabController.index == 0) {
       // Events for workplace
       if (eventRoll < 0.4) {
@@ -174,23 +173,23 @@ class _GameScreenState extends State<GameScreen>
         _showBreakRoomNotification();
       }
     }
-
+    
     // Schedule next event
     _startEventTimer();
   }
-
+  
   void _showCriticalErrorEvent() {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+    
     // Increase stress
     gameState.updateStress(20);
-
+    
     // Stop progress for 10 seconds
     setState(() {
       _isWorking = false;
       _addToEventLog('🐛 Критична помилка! Ви не можете писати код 10 секунд.');
     });
-
+    
     // If at Middle or Senior level, show QTE mini-game
     if (gameState.currentStage != CareerStage.Junior) {
       showDialog(
@@ -216,8 +215,7 @@ class _GameScreenState extends State<GameScreen>
               });
             });
           },
-          difficulty:
-              gameState.currentStage == CareerStage.Senior ? 'hard' : 'normal',
+          difficulty: gameState.currentStage == CareerStage.Senior ? 'hard' : 'normal',
         ),
       );
     } else {
@@ -230,15 +228,14 @@ class _GameScreenState extends State<GameScreen>
       });
     }
   }
-
+  
   void _showMeetingNotification() {
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
         title: Text('Сповіщення'),
-        content: Text(
-            'У конференц-залі ваші колеги проводять мітинг. Ви можете приєднатися і допомогти їм.'),
+        content: Text('У конференц-залі ваші колеги проводять мітинг. Ви можете приєднатися і допомогти їм.'),
         actions: [
           TextButton(
             onPressed: () {
@@ -258,15 +255,14 @@ class _GameScreenState extends State<GameScreen>
       ),
     );
   }
-
+  
   void _showBreakRoomNotification() {
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
         title: Text('Сповіщення'),
-        content: Text(
-            'Ви відчуваєте втому. Перейдіть до кімнати відпочинку, щоб відновити енергію.'),
+        content: Text('Ви відчуваєте втому. Перейдіть до кімнати відпочинку, щоб відновити енергію.'),
         actions: [
           TextButton(
             onPressed: () {
@@ -286,17 +282,16 @@ class _GameScreenState extends State<GameScreen>
       ),
     );
   }
-
-  void _startCoffeeBreak(
-      int duration, double energyBoost, double stressReduction) {
+  
+  void _startCoffeeBreak(int duration, double energyBoost, double stressReduction) {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+    
     setState(() {
       _coffeeBreakActive = true;
       _isWorking = false;
       _addToEventLog('☕ Перерва розпочата. Відпочиньте $duration секунд.');
     });
-
+    
     _coffeeBreakTimer?.cancel();
     _coffeeBreakTimer = Timer(Duration(seconds: duration), () {
       if (mounted) {
@@ -304,17 +299,16 @@ class _GameScreenState extends State<GameScreen>
           _coffeeBreakActive = false;
           gameState.updateEnergy(energyBoost);
           gameState.updateStress(stressReduction);
-          _addToEventLog(
-              '✅ Перерва завершена. +$energyBoost% енергії, ${stressReduction < 0 ? "" : "+"}$stressReduction% стресу!');
+          _addToEventLog('✅ Перерва завершена. +$energyBoost% енергії, ${stressReduction < 0 ? "" : "+"}$stressReduction% стресу!');
         });
       }
     });
   }
-
+  
   void _showPauseMenu() {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
     gameState.pauseGame();
-
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -344,7 +338,7 @@ class _GameScreenState extends State<GameScreen>
       ),
     );
   }
-
+  
   String _getPowerupMessage(PowerupType powerupType) {
     switch (powerupType) {
       case PowerupType.askColleague:
@@ -359,24 +353,24 @@ class _GameScreenState extends State<GameScreen>
         return '📝 Ви провели code review. +10% прогресу, -10% стресу.';
     }
   }
-
+  
   void _handleKeyEvent(RawKeyEvent event) {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+    
     // Only handle key events in the workplace tab
     if (_tabController.index != 0) return;
-
+    
     if (gameState.isPaused || !_isWorking || _coffeeBreakActive) return;
-
+    
     if (event is RawKeyDownEvent) {
       setState(() {
         _keyPressCount++;
-
+        
         // Update code progress every 5 key presses
         if (_keyPressCount >= 5) {
           gameState.updateCodeProgress(_keyPressCount);
           _keyPressCount = 0;
-
+          
           // Add random coding messages to event log
           if (Random().nextDouble() < 0.3) {
             final messages = [
@@ -389,20 +383,20 @@ class _GameScreenState extends State<GameScreen>
           }
         }
       });
-
+      
       // Check win/lose conditions
       _checkGameConditions();
     }
   }
-
+  
   void _checkGameConditions() {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+    
     // Win condition - code progress reached 100%
     if (gameState.codeProgress >= 100) {
       _endDay(true, null);
     }
-
+    
     // Lose conditions
     if (gameState.stress >= 100) {
       _endDay(false, "Рівень стресу досяг максимуму!");
@@ -410,24 +404,24 @@ class _GameScreenState extends State<GameScreen>
       _endDay(false, "Ваша енергія вичерпалась!");
     }
   }
-
+  
   void _endDay(bool success, String? reasonForFailure) {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+    
     // Cancel all timers
     _eventTimer?.cancel();
     _coffeeBreakTimer?.cancel();
-
+    
     setState(() {
       _isWorking = false;
     });
-
+    
     // Update game state
     gameState.completeDay(success);
-
+    
     if (success) {
       _addToEventLog('🎉 Вітаємо! Ви успішно завершили день!');
-
+      
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -441,16 +435,12 @@ class _GameScreenState extends State<GameScreen>
               SizedBox(height: 10),
               Text('Залишилось часу: $_formattedTime'),
               SizedBox(height: 10),
-              if (gameState.currentDay == 7 &&
-                  gameState.currentStage == CareerStage.Senior)
-                Text('🏆 Вітаємо! Ви пройшли гру повністю!',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, color: Colors.green)),
-              if (gameState.currentDay == 7 &&
-                  gameState.currentStage != CareerStage.Senior)
+              if (gameState.currentDay == 7 && gameState.currentStage == CareerStage.Senior)
+                Text('🏆 Вітаємо! Ви пройшли гру повністю!', 
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+              if (gameState.currentDay == 7 && gameState.currentStage != CareerStage.Senior)
                 Text('🎓 Ви готові до підвищення!',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, color: Colors.blue)),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
             ],
           ),
           actions: [
@@ -464,7 +454,7 @@ class _GameScreenState extends State<GameScreen>
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-
+                
                 // If last day of stage, return to level selection
                 if (gameState.currentDay == 7) {
                   Navigator.of(context).pop();
@@ -474,23 +464,20 @@ class _GameScreenState extends State<GameScreen>
                   _startNewDay();
                 }
               },
-              child: Text(gameState.currentDay == 7
-                  ? 'Завершити етап'
-                  : 'Наступний день'),
+              child: Text(gameState.currentDay == 7 ? 'Завершити етап' : 'Наступний день'),
             ),
           ],
         ),
       );
     } else {
       _addToEventLog('❌ День завершено невдало. ${reasonForFailure ?? ""}');
-
+      
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: Text('День провалено!'),
-          content: Text(
-              '${reasonForFailure ?? "Ви не впорались із завданням."} Спробуйте знову.'),
+          content: Text('${reasonForFailure ?? "Ви не впорались із завданням."} Спробуйте знову.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -511,10 +498,10 @@ class _GameScreenState extends State<GameScreen>
       );
     }
   }
-
+  
   void _startNewDay() {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+    
     gameState.startNewDay();
     setState(() {
       _eventLog = [];
@@ -522,17 +509,16 @@ class _GameScreenState extends State<GameScreen>
       _coffeeBreakActive = false;
       _isWorking = true;
       _formattedTime = "6:00";
-      _addToEventLog(
-          'День ${gameState.currentDay} почався! Ви на стадії ${_getStageTitle(gameState.currentStage)}.');
+      _addToEventLog('День ${gameState.currentDay} почався! Ви на стадії ${_getStageTitle(gameState.currentStage)}.');
     });
-
+    
     _startEventTimer();
     _keyboardFocusNode.requestFocus();
   }
-
+  
   void _restartDay() {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-
+    
     gameState.startNewDay();
     setState(() {
       _eventLog = [];
@@ -542,22 +528,22 @@ class _GameScreenState extends State<GameScreen>
       _formattedTime = "6:00";
       _addToEventLog('День ${gameState.currentDay} почався! Спробуйте знову.');
     });
-
+    
     _startEventTimer();
     _keyboardFocusNode.requestFocus();
   }
-
+  
   void _addToEventLog(String message) {
     setState(() {
       _eventLog.insert(0, message);
-
+      
       // Keep only last 10 messages
       if (_eventLog.length > 10) {
         _eventLog = _eventLog.sublist(0, 10);
       }
     });
   }
-
+  
   @override
   void dispose() {
     _eventTimer?.cancel();
@@ -567,11 +553,11 @@ class _GameScreenState extends State<GameScreen>
     _tabController.dispose();
     super.dispose();
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final gameState = Provider.of<GameStateProvider>(context);
-
+    
     return RawKeyboardListener(
       focusNode: _keyboardFocusNode,
       onKey: _handleKeyEvent,
@@ -585,27 +571,21 @@ class _GameScreenState extends State<GameScreen>
         },
         child: Scaffold(
           appBar: AppBar(
-            title: Text(
-                'Життя Програміста - ${_getStageTitle(gameState.currentStage)}'),
+            title: Text('Життя Програміста - ${_getStageTitle(gameState.currentStage)}'),
             actions: [
               Center(
                 child: Padding(
                   padding: EdgeInsets.only(right: 16.0),
                   child: Row(
                     children: [
-                      Icon(Icons.timer,
-                          color: _formattedTime.startsWith('0:')
-                              ? Colors.red
-                              : Colors.black),
+                      Icon(Icons.timer, color: _formattedTime.startsWith('0:') ? Colors.red : Colors.black),
                       SizedBox(width: 5),
                       Text(
                         _formattedTime,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16, 
                           fontWeight: FontWeight.bold,
-                          color: _formattedTime.startsWith('0:')
-                              ? Colors.red
-                              : Colors.black,
+                          color: _formattedTime.startsWith('0:') ? Colors.red : Colors.black,
                         ),
                       ),
                     ],
@@ -647,8 +627,7 @@ class _GameScreenState extends State<GameScreen>
                     children: [
                       Text(
                         'День ${gameState.currentDay} з 7',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 10),
                       Row(
@@ -682,536 +661,84 @@ class _GameScreenState extends State<GameScreen>
                   ),
                 ),
               ),
-
+              
               // Tab content
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
                   children: [
                     // Workplace Tab
-                    Row(
-                      children: [
-                        // Left side - Actions menu
-                        Expanded(
-                          child: Card(
-                            margin: EdgeInsets.all(8.0),
-                            child: Padding(
-                              padding: EdgeInsets.all(12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Дії',
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  SizedBox(height: 16),
-                                  ElevatedButton.icon(
-                                    icon: Icon(Icons.code),
-                                    label: Text('Писати код'),
-                                    onPressed: _isWorking || _coffeeBreakActive
-                                        ? null
-                                        : () {
-                                            if (!gameState.isPaused &&
-                                                !_coffeeBreakActive) {
-                                              setState(() {
-                                                _isWorking = true;
-                                                _keyboardFocusNode
-                                                    .requestFocus();
-                                              });
-                                              _addToEventLog(
-                                                  '🖥️ Ви почали писати код. Натискайте клавіші!');
-                                            }
-                                          },
-                                    style: ElevatedButton.styleFrom(
-                                      minimumSize: Size(double.infinity, 50),
-                                      backgroundColor: Colors.blue,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                  ),
-                                  SizedBox(height: 12),
-                                  Expanded(
-                                    child: Card(
-                                      color: Colors.grey[200],
-                                      child: Padding(
-                                        padding: EdgeInsets.all(8.0),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Журнал подій:',
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            SizedBox(height: 8),
-                                            Expanded(
-                                              child: ListView.builder(
-                                                itemCount: _eventLog.length,
-                                                itemBuilder: (context, index) {
-                                                  return Padding(
-                                                    padding:
-                                                        EdgeInsets.symmetric(
-                                                            vertical: 4.0),
-                                                    child:
-                                                        Text(_eventLog[index]),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Right side - Location image
-                        Expanded(
-                          child: Card(
-                            margin: EdgeInsets.all(8.0),
-                            child: Padding(
-                              padding: EdgeInsets.all(12.0),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'Робоче місце',
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  SizedBox(height: 16),
-                                  Expanded(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[200],
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
-                                      ),
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            // Workplace image
-                                            Container(
-                                              width: double.infinity,
-                                              height: 400,
-                                              child: _coffeeBreakActive
-                                                  ? Image.asset(
-                                                      'assets/images/workplace_break.png',
-                                                      fit: BoxFit.contain,
-                                                    )
-                                                  : _isWorking
-                                                      ? Image.asset(
-                                                          'assets/images/workplace_coding.png',
-                                                          fit: BoxFit.contain,
-                                                        )
-                                                      : Image.asset(
-                                                          'assets/images/workplace_idle.png',
-                                                          fit: BoxFit.contain,
-                                                        ),
-                                            ),
-                                            SizedBox(height: 16),
-                                            // Status text
-                                            Text(
-                                              _coffeeBreakActive
-                                                  ? 'Ви на перерві'
-                                                  : _isWorking
-                                                      ? 'Ви пишете код'
-                                                      : 'Комп\'ютер очікує',
-                                              style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            if (_isWorking)
-                                              Text(
-                                                'Натискайте клавіші для прогресу',
-                                                style: TextStyle(fontSize: 14),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    WorkplaceTab(
+                      eventLog: _eventLog,
+                      isWorking: _isWorking,
+                      coffeeBreakActive: _coffeeBreakActive,
+                      onStartWorking: () {
+                        if (!gameState.isPaused && !_coffeeBreakActive) {
+                          setState(() {
+                            _isWorking = true;
+                            _keyboardFocusNode.requestFocus();
+                          });
+                          _addToEventLog('🖥️ Ви почали писати код. Натискайте клавіші!');
+                        }
+                      },
                     ),
-
+                    
                     // Break Room Tab
-                    Row(
-                      children: [
-                        // Left side - Actions menu
-                        Expanded(
-                          child: Card(
-                            margin: EdgeInsets.all(8.0),
-                            child: Padding(
-                              padding: EdgeInsets.all(12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Дії',
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  SizedBox(height: 16),
-                                  Expanded(
-                                    child: SingleChildScrollView(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          ElevatedButton.icon(
-                                            icon: Icon(Icons.coffee),
-                                            label: Text('Випити каву'),
-                                            onPressed: _coffeeBreakActive
-                                                ? null
-                                                : () {
-                                                    _startCoffeeBreak(
-                                                        15, 25, 0);
-                                                  },
-                                            style: ElevatedButton.styleFrom(
-                                              minimumSize:
-                                                  Size(double.infinity, 50),
-                                              backgroundColor: Colors.brown,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                          ),
-                                          SizedBox(height: 12),
-                                          ElevatedButton.icon(
-                                            icon: Icon(Icons.sports_bar),
-                                            label: Text('Енергетик'),
-                                            onPressed: _coffeeBreakActive
-                                                ? null
-                                                : () {
-                                                    _startCoffeeBreak(
-                                                        10, 30, 15);
-                                                  },
-                                            style: ElevatedButton.styleFrom(
-                                              minimumSize:
-                                                  Size(double.infinity, 50),
-                                              backgroundColor: Colors.orange,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                          ),
-                                          SizedBox(height: 12),
-                                          ElevatedButton.icon(
-                                            icon: Icon(Icons.self_improvement),
-                                            label: Text('Медитація'),
-                                            onPressed: _coffeeBreakActive
-                                                ? null
-                                                : () {
-                                                    _startCoffeeBreak(
-                                                        20, -5, -20);
-                                                  },
-                                            style: ElevatedButton.styleFrom(
-                                              minimumSize:
-                                                  Size(double.infinity, 50),
-                                              backgroundColor: Colors.purple,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                          ),
-                                          SizedBox(height: 12),
-                                          ElevatedButton.icon(
-                                            icon: Icon(Icons.fastfood),
-                                            label: Text('Перекусити'),
-                                            onPressed: _coffeeBreakActive
-                                                ? null
-                                                : () {
-                                                    _startCoffeeBreak(5, 15, 5);
-                                                  },
-                                            style: ElevatedButton.styleFrom(
-                                              minimumSize:
-                                                  Size(double.infinity, 50),
-                                              backgroundColor: Colors.green,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                          ),
-                                          SizedBox(height: 12),
-                                          ElevatedButton.icon(
-                                            icon: Icon(Icons.hotel),
-                                            label: Text('Короткий сон'),
-                                            onPressed: _coffeeBreakActive
-                                                ? null
-                                                : () {
-                                                    _startCoffeeBreak(
-                                                        30, 35, -10);
-                                                  },
-                                            style: ElevatedButton.styleFrom(
-                                              minimumSize:
-                                                  Size(double.infinity, 50),
-                                              backgroundColor: Colors.indigo,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Right side - Location image
-                        Expanded(
-                          child: Card(
-                            margin: EdgeInsets.all(8.0),
-                            child: Padding(
-                              padding: EdgeInsets.all(12.0),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'Кімната відпочинку',
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  SizedBox(height: 16),
-                                  Expanded(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[200],
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
-                                      ),
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            // Break room image
-                                            Container(
-                                              width: double.infinity,
-                                              height: 400,
-                                              child: _coffeeBreakActive
-                                                  ? Image.asset(
-                                                      'assets/images/breakroom_active.png',
-                                                      fit: BoxFit.contain,
-                                                    )
-                                                  : Image.asset(
-                                                      'assets/images/breakroom_idle.png',
-                                                      fit: BoxFit.contain,
-                                                    ),
-                                            ),
-                                            SizedBox(height: 16),
-                                            // Status text
-                                            Text(
-                                              _coffeeBreakActive
-                                                  ? 'Ви відпочиваєте'
-                                                  : 'Кімната відпочинку',
-                                              style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            if (!_coffeeBreakActive)
-                                              Text(
-                                                'Виберіть дію для відпочинку',
-                                                style: TextStyle(fontSize: 14),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    BreakRoomTab(
+                      onCoffeeBreak: () {
+                        _startCoffeeBreak(15, 25, 0);
+                      },
+                      onEnergyDrink: () {
+                        _startCoffeeBreak(10, 30, 15);
+                      },
+                      onMeditation: () {
+                        _startCoffeeBreak(20, -5, -20);
+                      },
+                      onSnack: () {
+                        _startCoffeeBreak(5, 15, 5);
+                      },
+                      onPowerNap: () {
+                        _startCoffeeBreak(30, 35, -10);
+                      },
+                      coffeeBreakActive: _coffeeBreakActive,
+                      addToEventLog: _addToEventLog,
+                      gameState: gameState,
                     ),
-
+                    
                     // Conference Room Tab
-                    Row(
-                      children: [
-                        // Left side - Actions menu
-                        Expanded(
-                          child: Card(
-                            margin: EdgeInsets.all(8.0),
-                            child: Padding(
-                              padding: EdgeInsets.all(12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Дії',
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  SizedBox(height: 16),
-                                  Expanded(
-                                    child: SingleChildScrollView(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          ElevatedButton.icon(
-                                            icon: Icon(Icons.help_outline),
-                                            label: Text('Попросити допомоги'),
-                                            onPressed: () {
-                                              final gameState = Provider.of<
-                                                      GameStateProvider>(
-                                                  context);
-                                              gameState.updateCodeProgress(15);
-                                              gameState.updateStress(10);
-                                              _addToEventLog(
-                                                  '🧑‍💻 Ви попросили допомоги в колеги. +15% прогресу, +10% стресу.');
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              minimumSize:
-                                                  Size(double.infinity, 50),
-                                              backgroundColor: Colors.blue,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                          ),
-                                          SizedBox(height: 12),
-                                          ElevatedButton.icon(
-                                            icon: Icon(Icons.person_add),
-                                            label: Text('Допомогти колезі'),
-                                            onPressed: () {
-                                              final gameState = Provider.of<
-                                                      GameStateProvider>(
-                                                  context);
-                                              gameState.updateCodeProgress(5);
-                                              gameState.updateEnergy(-10);
-                                              gameState.updateStress(-5);
-                                              _addToEventLog(
-                                                  '👨‍👩‍👧‍👦 Ви допомогли колезі. +5% прогресу, -10% енергії, -5% стресу.');
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              minimumSize:
-                                                  Size(double.infinity, 50),
-                                              backgroundColor: Colors.green,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                          ),
-                                          SizedBox(height: 12),
-                                          ElevatedButton.icon(
-                                            icon: Icon(Icons.rate_review),
-                                            label: Text('Code review'),
-                                            onPressed: () {
-                                              final gameState = Provider.of<
-                                                      GameStateProvider>(
-                                                  context);
-                                              gameState.updateCodeProgress(10);
-                                              gameState.updateStress(-10);
-                                              _addToEventLog(
-                                                  '📝 Ви провели code review. +10% прогресу, -10% стресу.');
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              minimumSize:
-                                                  Size(double.infinity, 50),
-                                              backgroundColor: Colors.purple,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                          ),
-                                          SizedBox(height: 12),
-                                          ElevatedButton.icon(
-                                            icon: Icon(Icons.groups),
-                                            label: Text('Командна нарада'),
-                                            onPressed: () {
-                                              final gameState = Provider.of<
-                                                      GameStateProvider>(
-                                                  context);
-                                              gameState.updateCodeProgress(8);
-                                              gameState.updateStress(5);
-                                              gameState.updateEnergy(-8);
-                                              _addToEventLog(
-                                                  '👥 Ви взяли участь у командній нараді. +8% прогресу, +5% стресу, -8% енергії.');
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              minimumSize:
-                                                  Size(double.infinity, 50),
-                                              backgroundColor: Colors.amber,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Right side - Location image
-                        Expanded(
-                          child: Card(
-                            margin: EdgeInsets.all(8.0),
-                            child: Padding(
-                              padding: EdgeInsets.all(12.0),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'Конференц-зал',
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  SizedBox(height: 16),
-                                  Expanded(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[200],
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
-                                      ),
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            // Conference room image
-                                            Container(
-                                              width: double.infinity,
-                                              height: 400,
-                                              child: Image.asset(
-                                                'assets/images/conference_room.png',
-                                                fit: BoxFit.contain,
-                                              ),
-                                            ),
-                                            SizedBox(height: 16),
-                                            Text(
-                                              'Конференц-зал',
-                                              style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            Text(
-                                              'Тут ви можете взаємодіяти з колегами',
-                                              style: TextStyle(fontSize: 14),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    ConferenceRoomTab(
+                      onAskForHelp: () {
+                        final gameState = Provider.of<GameStateProvider>(context, listen: false);
+                        gameState.updateCodeProgress(15);
+                        gameState.updateStress(10);
+                        _addToEventLog('🧑‍💻 Ви попросили допомоги в колеги. +15% прогресу, +10% стресу.');
+                      },
+                      onHelpColleague: () {
+                        final gameState = Provider.of<GameStateProvider>(context, listen: false);
+                        gameState.updateCodeProgress(5);
+                        gameState.updateEnergy(-10);
+                        gameState.updateStress(-5);
+                        _addToEventLog('👨‍👩‍👧‍👦 Ви допомогли колезі. +5% прогресу, -10% енергії, -5% стресу.');
+                      },
+                      onCodeReview: () {
+                        final gameState = Provider.of<GameStateProvider>(context, listen: false);
+                        gameState.updateCodeProgress(10);
+                        gameState.updateStress(-10);
+                        _addToEventLog('📝 Ви провели code review. +10% прогресу, -10% стресу.');
+                      },
+                      onTeamMeeting: () {
+                        final gameState = Provider.of<GameStateProvider>(context, listen: false);
+                        gameState.updateCodeProgress(8);
+                        gameState.updateStress(5);
+                        gameState.updateEnergy(-8);
+                        _addToEventLog('👥 Ви взяли участь у командній нараді. +8% прогресу, +5% стресу, -8% енергії.');
+                      },
+                      addToEventLog: _addToEventLog,
+                      gameState: gameState,
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),

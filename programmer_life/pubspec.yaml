@@ -1,4 +1,3 @@
-
 name: programmer_life_game
 description: A browser-based game that simulates the life of a programmer.
 publish_to: 'none'
@@ -23,11 +22,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/workplace_idle.png
-    - assets/images/workplace_coding.png
-    - assets/images/workplace_break.png
-    - assets/images/breakroom_idle.png
-    - assets/images/breakroom_active.png
+    - assets/images/workplace.png
+    - assets/images/break_room.png
     - assets/images/conference_room.png
   fonts:
     - family: RobotoMono
