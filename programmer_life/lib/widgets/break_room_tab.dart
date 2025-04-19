@@ -27,61 +27,28 @@ class BreakRoomTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(  // Changed from Column to Row
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Break room image
-          Container(
-            height: 120,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-              image: DecorationImage(
-                image: AssetImage('assets/images/break_room.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Stack(
-              children: [
-                Container(
-                  color: Colors.black.withOpacity(0.5),
-                  width: double.infinity,
-                  height: double.infinity,
-                ),
-                Center(
-                  child: Text(
-                    'Кімната відпочинку',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+          // Break options on the left
+          Expanded(
+            flex: 3,  // Take 60% of the space
+            child: coffeeBreakActive 
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text(
+                      'Відпочиваємо...',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          
-          SizedBox(height: 16),
-          
-          // Break options
-          if (coffeeBreakActive) 
-            Center(
-              child: Column(
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Відпочиваємо...',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            )
-          else 
-            Expanded(
-              child: Column(
+              )
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     'Оберіть вид відпочинку:',
@@ -91,49 +58,63 @@ class BreakRoomTab extends StatelessWidget {
                   SizedBox(height: 16),
                   
                   Expanded(
-                    child: GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
+                    child: ListView(
                       children: [
                         _buildBreakOption(
                           context,
                           'Випити каву',
                           Icons.coffee,
                           Colors.brown,
-                          '+25% енергії\n15 секунд',
+                          'Відновлює енергію та зосередженість',
+                          '+25% енергії, 15 секунд',
                           onCoffeeBreak,
                         ),
+                        
+                        SizedBox(height: 10),
+                        
                         _buildBreakOption(
                           context,
                           'Енергетик',
                           Icons.local_drink,
                           Colors.red,
-                          '+30% енергії\n+15% стресу\n10 секунд',
+                          'Швидкий заряд енергії, але підвищує стрес',
+                          '+30% енергії, +15% стресу, 10 секунд',
                           onEnergyDrink,
                         ),
+                        
+                        SizedBox(height: 10),
+                        
                         _buildBreakOption(
                           context,
                           'Медитація',
                           Icons.self_improvement,
                           Colors.green,
-                          '-20% стресу\n-5% енергії\n20 секунд',
+                          'Знижує рівень стресу, але забирає трохи енергії',
+                          '-20% стресу, -5% енергії, 20 секунд',
                           onMeditation,
                         ),
+                        
+                        SizedBox(height: 10),
+                        
                         _buildBreakOption(
                           context,
                           'Перекус',
                           Icons.fastfood,
                           Colors.orange,
-                          '+15% енергії\n+5% стресу\n5 секунд',
+                          'Швидкий перекус для додаткової енергії',
+                          '+15% енергії, +5% стресу, 5 секунд',
                           onSnack,
                         ),
+                        
+                        SizedBox(height: 10),
+                        
                         _buildBreakOption(
                           context,
                           'Короткий сон',
                           Icons.hotel,
                           Colors.blue,
-                          '+35% енергії\n-10% стресу\n30 секунд',
+                          'Значно відновлює енергію та знижує стрес',
+                          '+35% енергії, -10% стресу, 30 секунд',
                           onPowerNap,
                         ),
                       ],
@@ -141,7 +122,44 @@ class BreakRoomTab extends StatelessWidget {
                   ),
                 ],
               ),
+          ),
+          
+          SizedBox(width: 16),  // Space between actions and image
+          
+          // Break room image on the right
+          Expanded(
+            flex: 2,  // Take 40% of the space
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+                image: DecorationImage(
+                  image: AssetImage('assets/images/break_room.png'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Stack(
+                children: [
+                  Container(
+                    color: Colors.black.withOpacity(0.5),
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                  Center(
+                    child: Text(
+                      'Кімната відпочинку',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
         ],
       ),
     );
@@ -153,6 +171,7 @@ class BreakRoomTab extends StatelessWidget {
     IconData icon,
     Color color,
     String description,
+    String effects,
     VoidCallback onTap,
   ) {
     return Card(
@@ -160,23 +179,57 @@ class BreakRoomTab extends StatelessWidget {
       child: InkWell(
         onTap: coffeeBreakActive ? null : onTap,
         child: Padding(
-          padding: EdgeInsets.all(12.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          padding: EdgeInsets.all(16.0),
+          child: Row(
             children: [
-              Icon(icon, size: 32, color: color),
-              SizedBox(height: 8),
-              Text(
-                title,
-                style: TextStyle(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: coffeeBreakActive ? Colors.grey[200] : color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: Icon(
+                  icon,
+                  color: coffeeBreakActive ? Colors.grey : color,
+                  size: 30,
+                ),
               ),
-              SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(fontSize: 12),
-                textAlign: TextAlign.center,
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: coffeeBreakActive ? Colors.grey : Colors.black,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: coffeeBreakActive ? Colors.grey : Colors.black54,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      effects,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: coffeeBreakActive ? Colors.grey : color,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              if (coffeeBreakActive)
+                Icon(Icons.lock, color: Colors.grey, size: 16),
             ],
           ),
         ),
