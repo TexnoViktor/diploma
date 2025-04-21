@@ -53,6 +53,10 @@ class _OrientationTestScreenState extends State<OrientationTestScreen> {
   
   int _currentQuestionIndex = 0;
   List<int> _answers = [];
+  bool _showResults = false;
+  late Map<String, dynamic> _results;
+  double _totalScore = 0;
+  final double _passingScoreThreshold = 60.0; // Поріг прохідного балу (60%)
   
   void _answerQuestion(int answerIndex) {
     setState(() {
@@ -61,14 +65,14 @@ class _OrientationTestScreenState extends State<OrientationTestScreen> {
       if (_currentQuestionIndex < _questions.length - 1) {
         _currentQuestionIndex++;
       } else {
-        _finishTest();
+        _calculateResults();
       }
     });
   }
   
-  void _finishTest() {
+  void _calculateResults() {
     // Calculate test results
-    Map<String, dynamic> results = {
+    _results = {
       'stressResistance': _calculateScore(_answers[0], _answers[6]),
       'teamwork': _calculateScore(_answers[1], _answers[5]),
       'motivation': _calculateScore(_answers[2], _answers[8]),
@@ -76,21 +80,66 @@ class _OrientationTestScreenState extends State<OrientationTestScreen> {
       'learning': _calculateScore(_answers[4], _answers[9]),
     };
     
+    // Calculate total score (average of all results)
+    _totalScore = _results.values.reduce((value, element) => value + element) / _results.length;
+    
+    // Show results screen
+    setState(() {
+      _showResults = true;
+    });
+  }
+  
+  void _finishTest() {
     // Save results and navigate to main menu
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
-    gameState.setTestCompleted(results);
+    gameState.setTestCompleted(_results);
     Navigator.pushReplacementNamed(context, '/main_menu');
+  }
+  
+  void _restartTest() {
+    setState(() {
+      _currentQuestionIndex = 0;
+      _answers = [];
+      _showResults = false;
+    });
   }
   
   int _calculateScore(int answer1, int answer2) {
     // Simple calculation based on two related answers
     // 0 is best (first option), 2 is worst (last option)
-    // Lower scores are better for the programmer's success
-    return ((answer1 + answer2) / 2 * 50).round();
+    // Lower scores are better in original logic, but we'll invert it
+    // to make higher scores better for clearer UI presentation
+    // Now 100 is best and 0 is worst
+    return 100 - ((answer1 + answer2) / 2 * 50).round();
+  }
+  
+  String _getSkillName(String key) {
+    switch(key) {
+      case 'stressResistance': 
+        return 'Стресостійкість';
+      case 'teamwork': 
+        return 'Командна робота';
+      case 'motivation': 
+        return 'Мотивація';
+      case 'workEthic': 
+        return 'Робоча етика';
+      case 'learning': 
+        return 'Здатність навчатись';
+      default: 
+        return key;
+    }
   }
   
   @override
   Widget build(BuildContext context) {
+    if (_showResults) {
+      return _buildResultsScreen();
+    } else {
+      return _buildQuestionScreen();
+    }
+  }
+  
+  Widget _buildQuestionScreen() {
     final currentQuestion = _questions[_currentQuestionIndex];
     
     return Scaffold(
@@ -125,6 +174,127 @@ class _OrientationTestScreenState extends State<OrientationTestScreen> {
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildResultsScreen() {
+    final bool passed = _totalScore >= _passingScoreThreshold;
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Результати тесту'),
+        automaticallyImplyLeading: false,
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Ваш загальний результат:',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 10),
+            Text(
+              '${_totalScore.toStringAsFixed(1)}%',
+              style: TextStyle(
+                fontSize: 42, 
+                fontWeight: FontWeight.bold,
+                color: passed ? Colors.green : Colors.red,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 20),
+            Card(
+              elevation: 4,
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      passed 
+                          ? 'Вітаємо! Ви маєте потенціал стати програмістом.'
+                          : 'На жаль, результати тесту вказують, що вам варто краще підготуватись.',
+                      style: TextStyle(
+                        fontSize: 18, 
+                        fontWeight: FontWeight.bold,
+                        color: passed ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      passed 
+                          ? 'Ваші відповіді демонструють необхідні якості та мотивацію для успішної кар\'єри в програмуванні. Продовжуйте розвиватись у цьому напрямку!'
+                          : 'Можливо, вам слід приділити більше уваги розвитку навичок, необхідних для програміста, або розглянути інші професійні напрямки. Ви можете пройти тест ще раз після кращої підготовки.',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Детальні результати:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _results.length,
+                itemBuilder: (ctx, index) {
+                  String key = _results.keys.elementAt(index);
+                  int value = _results[key];
+                  return ListTile(
+                    title: Text(_getSkillName(key)),
+                    subtitle: LinearProgressIndicator(
+                      value: value / 100,
+                      backgroundColor: Colors.grey[300],
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        value >= 60 ? Colors.green : Colors.orange,
+                      ),
+                    ),
+                    trailing: Text('$value%'),
+                  );
+                },
+              ),
+            ),
+            SizedBox(height: 20),
+            Row(
+              children: [
+                if (!passed)
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 8.0),
+                      child: ElevatedButton(
+                        onPressed: _restartTest,
+                        child: Text('Пройти тест ще раз'),
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor: Colors.orange,
+                        ),
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(left: passed ? 0 : 8.0),
+                    child: ElevatedButton(
+                      onPressed: _finishTest,
+                      child: Text('Продовжити'),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: passed ? Colors.green : Colors.blue,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
