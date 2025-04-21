@@ -105,7 +105,6 @@ class ConferenceRoomTab extends StatelessWidget {
             flex: 2,  // Take 40% of the space
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(8),
                 image: DecorationImage(
                   image: AssetImage('assets/images/conference_room.png'),
@@ -119,16 +118,6 @@ class ConferenceRoomTab extends StatelessWidget {
                     color: Colors.black.withOpacity(0.5),
                     width: double.infinity,
                     height: double.infinity,
-                  ),
-                  Center(
-                    child: Text(
-                      'Конференц-зал',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
                 ],
               ),

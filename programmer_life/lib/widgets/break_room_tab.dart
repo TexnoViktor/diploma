@@ -131,7 +131,6 @@ class BreakRoomTab extends StatelessWidget {
             flex: 2,  // Take 40% of the space
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(8),
                 image: DecorationImage(
                   image: AssetImage('assets/images/break_room.png'),
@@ -145,16 +144,6 @@ class BreakRoomTab extends StatelessWidget {
                     color: Colors.black.withOpacity(0.5),
                     width: double.infinity,
                     height: double.infinity,
-                  ),
-                  Center(
-                    child: Text(
-                      'Кімната відпочинку',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
                 ],
               ),

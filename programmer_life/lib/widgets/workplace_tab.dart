@@ -102,7 +102,6 @@ class WorkplaceTab extends StatelessWidget {
             flex: 2,  // Take 40% of the space
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(8),
                 image: DecorationImage(
                   image: AssetImage('assets/images/workplace.png'),
@@ -113,19 +112,8 @@ class WorkplaceTab extends StatelessWidget {
               child: Stack(
                 children: [
                   Container(
-                    color: Colors.black.withOpacity(0.5),
                     width: double.infinity,
                     height: double.infinity,
-                  ),
-                  Center(
-                    child: Text(
-                      'Робоче місце',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
                 ],
               ),
