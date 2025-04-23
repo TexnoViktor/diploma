@@ -8,6 +8,7 @@ class ConferenceRoomTab extends StatelessWidget {
   final VoidCallback onTeamMeeting;
   final Function(String) addToEventLog;
   final GameStateProvider gameState;
+  final VoidCallback checkGameConditions;  // Додано callback для перевірки умов закінчення гри
   
   const ConferenceRoomTab({
     required this.onAskForHelp,
@@ -16,6 +17,7 @@ class ConferenceRoomTab extends StatelessWidget {
     required this.onTeamMeeting,
     required this.addToEventLog,
     required this.gameState,
+    required this.checkGameConditions,  // Новий обов'язковий параметр
   });
   
   @override
@@ -49,7 +51,11 @@ class ConferenceRoomTab extends StatelessWidget {
                         Colors.blue,
                         'Попросіть колег допомогти з вашим завданням',
                         '+15% прогресу, +10% стресу',
-                        onAskForHelp,
+                        () {
+                          onAskForHelp();
+                          // Перевірка умов закінчення гри після впливу взаємодії
+                          checkGameConditions();
+                        },
                         gameState.availablePowerups[PowerupType.askColleague] ?? false,
                       ),
                       
@@ -62,7 +68,11 @@ class ConferenceRoomTab extends StatelessWidget {
                         Colors.green,
                         'Допоможіть колезі з його завданням',
                         '+5% прогресу, -10% енергії, -5% стресу',
-                        onHelpColleague,
+                        () {
+                          onHelpColleague();
+                          // Перевірка умов закінчення гри після впливу взаємодії
+                          checkGameConditions();
+                        },
                         true, // Always available
                       ),
                       
@@ -75,7 +85,11 @@ class ConferenceRoomTab extends StatelessWidget {
                         Colors.amber,
                         'Проведіть code review проекту команди',
                         '+10% прогресу, -10% стресу',
-                        onCodeReview,
+                        () {
+                          onCodeReview();
+                          // Перевірка умов закінчення гри після впливу взаємодії
+                          checkGameConditions();
+                        },
                         gameState.availablePowerups[PowerupType.codeReview] ?? false,
                       ),
                       
@@ -88,7 +102,11 @@ class ConferenceRoomTab extends StatelessWidget {
                         Colors.purple,
                         'Візьміть участь у командній нараді',
                         '+8% прогресу, +5% стресу, -8% енергії',
-                        onTeamMeeting,
+                        () {
+                          onTeamMeeting();
+                          // Перевірка умов закінчення гри після впливу взаємодії
+                          checkGameConditions();
+                        },
                         true, // Always available
                       ),
                     ],

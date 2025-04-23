@@ -1,6 +1,5 @@
 // File: screens/game_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:math';
@@ -11,6 +10,7 @@ import '../widgets/pause_menu.dart';
 import '../widgets/workplace_tab.dart';
 import '../widgets/break_room_tab.dart';
 import '../widgets/conference_room_tab.dart';
+import '../widgets/coding_challenge.dart';
 
 class GameScreen extends StatefulWidget {
   @override
@@ -18,12 +18,10 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateMixin {
-  final FocusNode _keyboardFocusNode = FocusNode();
   Timer? _eventTimer;
   Timer? _timerUpdateTimer;
   List<String> _eventLog = [];
   bool _isWorking = false;
-  int _keyPressCount = 0;
   bool _coffeeBreakActive = false;
   Timer? _coffeeBreakTimer;
   String _formattedTime = "6:00";
@@ -49,13 +47,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
       });
       _addToEventLog('Ви тимчасово припинили писати код.');
     }
-    
-    // Request keyboard focus when returning to workplace tab
-    if (_tabController.index == 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _keyboardFocusNode.requestFocus();
-      });
-    }
   }
   
   void _initGame() {
@@ -71,11 +62,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     
     // Add initial event log
     _addToEventLog('День ${gameState.currentDay} почався! Ви на стадії ${_getStageTitle(gameState.currentStage)}.');
-    
-    // Ensure keyboard focus
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _keyboardFocusNode.requestFocus();
-    });
   }
   
   void _startTimerUpdates() {
@@ -183,6 +169,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     
     // Increase stress
     gameState.updateStress(20);
+    // Перевірка умов закінчення гри після збільшення стресу
+    _checkGameConditions();
     
     // Stop progress for 10 seconds
     setState(() {
@@ -200,7 +188,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           onComplete: () {
             gameState.updateStress(-10); // Reduce stress if completed
             _addToEventLog('✅ Ви успішно виправили помилку!');
-            Timer(Duration(seconds: 10), () {
+            // Перевірка умов закінчення гри після зменшення стресу
+            _checkGameConditions();
+            Timer(Duration(seconds: 2), () {
               setState(() {
                 _isWorking = true;
               });
@@ -209,6 +199,8 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           onFail: () {
             gameState.updateStress(10); // Increase stress if failed
             _addToEventLog('❌ Не вдалося виправити помилку вчасно!');
+            // Перевірка умов закінчення гри після збільшення стресу
+            _checkGameConditions();
             Timer(Duration(seconds: 10), () {
               setState(() {
                 _isWorking = true;
@@ -300,6 +292,9 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
           gameState.updateEnergy(energyBoost);
           gameState.updateStress(stressReduction);
           _addToEventLog('✅ Перерва завершена. +$energyBoost% енергії, ${stressReduction < 0 ? "" : "+"}$stressReduction% стресу!');
+          
+          // Перевірка умов закінчення гри після завершення перерви
+          _checkGameConditions();
         });
       }
     });
@@ -316,12 +311,10 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         onResume: () {
           gameState.resumeGame();
           Navigator.of(context).pop();
-          _keyboardFocusNode.requestFocus();
         },
         onRestart: () {
           Navigator.of(context).pop();
           _restartDay();
-          _keyboardFocusNode.requestFocus();
         },
         onExit: () {
           Navigator.of(context).pop();
@@ -331,9 +324,12 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
         onUsePowerup: (PowerupType powerupType) {
           gameState.usePowerup(powerupType);
           _addToEventLog(_getPowerupMessage(powerupType));
+          
+          // Перевірка умов закінчення гри після використання пауерапу
+          _checkGameConditions();
+          
           Navigator.of(context).pop();
           gameState.resumeGame();
-          _keyboardFocusNode.requestFocus();
         },
       ),
     );
@@ -354,39 +350,51 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     }
   }
   
-  void _handleKeyEvent(RawKeyEvent event) {
+  void _handleCodeSubmission(bool isCorrect, int codeLength) {
     final gameState = Provider.of<GameStateProvider>(context, listen: false);
     
-    // Only handle key events in the workplace tab
-    if (_tabController.index != 0) return;
-    
-    if (gameState.isPaused || !_isWorking || _coffeeBreakActive) return;
-    
-    if (event is RawKeyDownEvent) {
-      setState(() {
-        _keyPressCount++;
-        
-        // Update code progress every 5 key presses
-        if (_keyPressCount >= 5) {
-          gameState.updateCodeProgress(_keyPressCount);
-          _keyPressCount = 0;
-          
-          // Add random coding messages to event log
-          if (Random().nextDouble() < 0.3) {
-            final messages = [
-              'Ви написали кілька рядків коду!',
-              'Функція реалізована!',
-              'Частина логіки готова!',
-              'Код компілюється успішно!',
-            ];
-            _addToEventLog(messages[Random().nextInt(messages.length)]);
-          }
-        }
-      });
+    if (isCorrect) {
+      // Calculate progress based on code length and career stage
+      // Longer code = more progress
+      double progressIncrement = (codeLength / 20.0) * 5.0; // Base progress
       
-      // Check win/lose conditions
-      _checkGameConditions();
+      // Adjust progress based on career stage (higher levels need more code)
+      switch (gameState.currentStage) {
+        case CareerStage.Junior:
+          progressIncrement *= 1.2; // Easier for juniors
+          break;
+        case CareerStage.Middle:
+          progressIncrement *= 1.0; // Standard for middle
+          break;
+        case CareerStage.Senior:
+          progressIncrement *= 0.8; // Harder for seniors
+          break;
+      }
+      
+      // Update game state and add to event log
+      gameState.updateCodeProgress(progressIncrement);
+      gameState.updateEnergy(-1.0); // Writing code consumes energy
+      gameState.recordCodeWritten(codeLength);
+      
+      // Add random success messages to event log
+      final messages = [
+        'Відмінно! Код прийнято.',
+        'Правильно! Ви написали коректний код.',
+        'Чудова робота! Рядок коду працює.',
+        'Успіх! Код додано до проекту.',
+      ];
+      _addToEventLog(messages[Random().nextInt(messages.length)]);
+    } else {
+      // Incorrect code submission
+      gameState.updateStress(3.0); // Increase stress
+      gameState.recordCodeError();
+      
+      // Add error message to event log
+      _addToEventLog('❌ Помилка! Неправильний код. Спробуйте ще раз.');
     }
+    
+    // Check win/lose conditions
+    _checkGameConditions();
   }
   
   void _checkGameConditions() {
@@ -505,15 +513,13 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     gameState.startNewDay();
     setState(() {
       _eventLog = [];
-      _keyPressCount = 0;
       _coffeeBreakActive = false;
-      _isWorking = true;
+      _isWorking = false;
       _formattedTime = "6:00";
       _addToEventLog('День ${gameState.currentDay} почався! Ви на стадії ${_getStageTitle(gameState.currentStage)}.');
     });
     
     _startEventTimer();
-    _keyboardFocusNode.requestFocus();
   }
   
   void _restartDay() {
@@ -522,15 +528,13 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     gameState.startNewDay();
     setState(() {
       _eventLog = [];
-      _keyPressCount = 0;
       _coffeeBreakActive = false;
-      _isWorking = true;
+      _isWorking = false;
       _formattedTime = "6:00";
       _addToEventLog('День ${gameState.currentDay} почався! Спробуйте знову.');
     });
     
     _startEventTimer();
-    _keyboardFocusNode.requestFocus();
   }
   
   void _addToEventLog(String message) {
@@ -549,7 +553,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
     _eventTimer?.cancel();
     _coffeeBreakTimer?.cancel();
     _timerUpdateTimer?.cancel();
-    _keyboardFocusNode.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -558,189 +561,297 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final gameState = Provider.of<GameStateProvider>(context);
     
-    return RawKeyboardListener(
-      focusNode: _keyboardFocusNode,
-      onKey: _handleKeyEvent,
-      child: WillPopScope(
-        onWillPop: () async {
-          if (gameState.isGameActive && !gameState.isPaused) {
-            _showPauseMenu();
-            return false;
-          }
-          return true;
-        },
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text('Життя Програміста - ${_getStageTitle(gameState.currentStage)}'),
-            actions: [
-              Center(
-                child: Padding(
-                  padding: EdgeInsets.only(right: 16.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.timer, color: _formattedTime.startsWith('0:') ? Colors.red : Colors.black),
-                      SizedBox(width: 5),
-                      Text(
-                        _formattedTime,
-                        style: TextStyle(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.bold,
-                          color: _formattedTime.startsWith('0:') ? Colors.red : Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.pause),
-                onPressed: _showPauseMenu,
-                tooltip: 'Пауза',
-              ),
-            ],
-            bottom: TabBar(
-              controller: _tabController,
-              tabs: [
-                Tab(
-                  icon: Icon(Icons.computer),
-                  text: 'Робоче місце',
-                ),
-                Tab(
-                  icon: Icon(Icons.weekend),
-                  text: 'Кімната відпочинку',
-                ),
-                Tab(
-                  icon: Icon(Icons.groups),
-                  text: 'Конференц-зал',
-                ),
-              ],
-            ),
-          ),
-          body: Column(
-            children: [
-              // Resources section
-              Card(
-                margin: EdgeInsets.all(8.0),
-                child: Padding(
-                  padding: EdgeInsets.all(12.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        'День ${gameState.currentDay} з 7',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ResourceIndicator(
-                              label: 'Енергія',
-                              value: gameState.energy,
-                              color: Colors.blue,
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: ResourceIndicator(
-                              label: 'Стрес',
-                              value: gameState.stress,
-                              color: Colors.red,
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: ResourceIndicator(
-                              label: 'Прогрес коду',
-                              value: gameState.codeProgress,
-                              color: Colors.green,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Tab content
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
+    return WillPopScope(
+      onWillPop: () async {
+        if (gameState.isGameActive && !gameState.isPaused) {
+          _showPauseMenu();
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Життя Програміста - ${_getStageTitle(gameState.currentStage)}'),
+          actions: [
+            Center(
+              child: Padding(
+                padding: EdgeInsets.only(right: 16.0),
+                child: Row(
                   children: [
-                    // Workplace Tab
-                    WorkplaceTab(
-                      eventLog: _eventLog,
-                      isWorking: _isWorking,
-                      coffeeBreakActive: _coffeeBreakActive,
-                      onStartWorking: () {
-                        if (!gameState.isPaused && !_coffeeBreakActive) {
-                          setState(() {
-                            _isWorking = true;
-                            _keyboardFocusNode.requestFocus();
-                          });
-                          _addToEventLog('🖥️ Ви почали писати код. Натискайте клавіші!');
-                        }
-                      },
-                    ),
-                    
-                    // Break Room Tab
-                    BreakRoomTab(
-                      onCoffeeBreak: () {
-                        _startCoffeeBreak(15, 25, 0);
-                      },
-                      onEnergyDrink: () {
-                        _startCoffeeBreak(10, 30, 15);
-                      },
-                      onMeditation: () {
-                        _startCoffeeBreak(20, -5, -20);
-                      },
-                      onSnack: () {
-                        _startCoffeeBreak(5, 15, 5);
-                      },
-                      onPowerNap: () {
-                        _startCoffeeBreak(30, 35, -10);
-                      },
-                      coffeeBreakActive: _coffeeBreakActive,
-                      addToEventLog: _addToEventLog,
-                      gameState: gameState,
-                    ),
-                    
-                    // Conference Room Tab
-                    ConferenceRoomTab(
-                      onAskForHelp: () {
-                        final gameState = Provider.of<GameStateProvider>(context, listen: false);
-                        gameState.updateCodeProgress(15);
-                        gameState.updateStress(10);
-                        _addToEventLog('🧑‍💻 Ви попросили допомоги в колеги. +15% прогресу, +10% стресу.');
-                      },
-                      onHelpColleague: () {
-                        final gameState = Provider.of<GameStateProvider>(context, listen: false);
-                        gameState.updateCodeProgress(5);
-                        gameState.updateEnergy(-10);
-                        gameState.updateStress(-5);
-                        _addToEventLog('👨‍👩‍👧‍👦 Ви допомогли колезі. +5% прогресу, -10% енергії, -5% стресу.');
-                      },
-                      onCodeReview: () {
-                        final gameState = Provider.of<GameStateProvider>(context, listen: false);
-                        gameState.updateCodeProgress(10);
-                        gameState.updateStress(-10);
-                        _addToEventLog('📝 Ви провели code review. +10% прогресу, -10% стресу.');
-                      },
-                      onTeamMeeting: () {
-                        final gameState = Provider.of<GameStateProvider>(context, listen: false);
-                        gameState.updateCodeProgress(8);
-                        gameState.updateStress(5);
-                        gameState.updateEnergy(-8);
-                        _addToEventLog('👥 Ви взяли участь у командній нараді. +8% прогресу, +5% стресу, -8% енергії.');
-                      },
-                      addToEventLog: _addToEventLog,
-                      gameState: gameState,
+                    Icon(Icons.timer, color: _formattedTime.startsWith('0:') ? Colors.red : Colors.black),
+                    SizedBox(width: 5),
+                    Text(
+                      _formattedTime,
+                      style: TextStyle(
+                        fontSize: 16, 
+                        fontWeight: FontWeight.bold,
+                        color: _formattedTime.startsWith('0:') ? Colors.red : Colors.black,
+                      ),
                     ),
                   ],
                 ),
               ),
+            ),
+            IconButton(
+              icon: Icon(Icons.pause),
+              onPressed: _showPauseMenu,
+              tooltip: 'Пауза',
+            ),
+          ],
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: [
+              Tab(
+                icon: Icon(Icons.computer),
+                text: 'Робоче місце',
+              ),
+              Tab(
+                icon: Icon(Icons.weekend),
+                text: 'Кімната відпочинку',
+              ),
+              Tab(
+                icon: Icon(Icons.groups),
+                text: 'Конференц-зал',
+              ),
             ],
           ),
+        ),
+        body: Column(
+          children: [
+            // Resources section
+            Card(
+              margin: EdgeInsets.all(8.0),
+              child: Padding(
+                padding: EdgeInsets.all(12.0),
+                child: Column(
+                  children: [
+                    Text(
+                      'День ${gameState.currentDay} з 7',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ResourceIndicator(
+                            label: 'Енергія',
+                            value: gameState.energy,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: ResourceIndicator(
+                            label: 'Стрес',
+                            value: gameState.stress,
+                            color: Colors.red,
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: ResourceIndicator(
+                            label: 'Прогрес коду',
+                            value: gameState.codeProgress,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Tab content
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Workplace Tab with new coding challenge
+                  Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Actions and event log on the left
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Coding challenge component
+                              Card(
+                                elevation: 3,
+                                child: Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Завдання:',
+                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                      ),
+                                      SizedBox(height: 16),
+                                      // Start working button
+                                      if (!_isWorking && !_coffeeBreakActive)
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              _isWorking = true;
+                                            });
+                                            _addToEventLog('🖥️ Ви почали писати код.');
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            padding: EdgeInsets.symmetric(vertical: 16),
+                                          ),
+                                          child: Text(
+                                            'Почати писати код', 
+                                            style: TextStyle(fontSize: 16),
+                                          ),
+                                        ),
+                                        
+                                      // Coding challenge
+                                      if (_isWorking || _coffeeBreakActive)
+                                        CodingChallenge(
+                                          isActive: _isWorking && !_coffeeBreakActive,
+                                          careerStage: gameState.currentStage,
+                                          onSubmit: _handleCodeSubmission,
+                                        ),
+                                        
+                                      if (_coffeeBreakActive)
+                                        Padding(
+                                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                                          child: Text(
+                                            'Відпочиваємо... Перерва активна.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.brown),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              
+                              SizedBox(height: 16),
+                              
+                              // Event log
+                              Expanded(
+                                child: Card(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Журнал подій:',
+                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                        ),
+                                        SizedBox(height: 10),
+                                        Expanded(
+                                          child: ListView.builder(
+                                            itemCount: _eventLog.length,
+                                            itemBuilder: (context, index) => Padding(
+                                              padding: EdgeInsets.only(bottom: 8.0),
+                                              child: Text(_eventLog[index]),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        SizedBox(width: 16),
+                        
+                        // Workplace image on the right
+                        Expanded(
+                          flex: 2,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: DecorationImage(
+                                image: AssetImage('assets/images/workplace.png'),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Break Room Tab with check game conditions
+                  BreakRoomTab(
+                    onCoffeeBreak: () {
+                      _startCoffeeBreak(15, 25, 0);
+                    },
+                    onEnergyDrink: () {
+                      _startCoffeeBreak(10, 30, 15);
+                    },
+                    onMeditation: () {
+                      _startCoffeeBreak(20, -5, -20);
+                    },
+                    onSnack: () {
+                      _startCoffeeBreak(5, 15, 5);
+                    },
+                    onPowerNap: () {
+                      _startCoffeeBreak(30, 35, -10);
+                    },
+                    coffeeBreakActive: _coffeeBreakActive,
+                    addToEventLog: _addToEventLog,
+                    gameState: gameState,
+                    checkGameConditions: _checkGameConditions,
+                  ),
+                  
+                  // Conference Room Tab with check game conditions
+                  ConferenceRoomTab(
+                    onAskForHelp: () {
+                      final gameState = Provider.of<GameStateProvider>(context, listen: false);
+                      gameState.updateCodeProgress(15);
+                      gameState.updateStress(10);
+                      _addToEventLog('🧑‍💻 Ви попросили допомоги в колеги. +15% прогресу, +10% стресу.');
+                    },
+                    onHelpColleague: () {
+                      final gameState = Provider.of<GameStateProvider>(context, listen: false);
+                      gameState.updateCodeProgress(5);
+                      gameState.updateEnergy(-10);
+                      gameState.updateStress(-5);
+                      _addToEventLog('👨‍👩‍👧‍👦 Ви допомогли колезі. +5% прогресу, -10% енергії, -5% стресу.');
+                    },
+                    onCodeReview: () {
+                      final gameState = Provider.of<GameStateProvider>(context, listen: false);
+                      gameState.updateCodeProgress(10);
+                      gameState.updateStress(-10);
+                      _addToEventLog('📝 Ви провели code review. +10% прогресу, -10% стресу.');
+                    },
+                    onTeamMeeting: () {
+                      final gameState = Provider.of<GameStateProvider>(context, listen: false);
+                      gameState.updateCodeProgress(8);
+                      gameState.updateStress(5);
+                      gameState.updateEnergy(-8);
+                      _addToEventLog('👥 Ви взяли участь у командній нараді. +8% прогресу, +5% стресу, -8% енергії.');
+                    },
+                    addToEventLog: _addToEventLog,
+                    gameState: gameState,
+                    checkGameConditions: _checkGameConditions,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

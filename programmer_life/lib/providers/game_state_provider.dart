@@ -46,6 +46,11 @@ class GameStateProvider with ChangeNotifier {
     CareerStage.Senior.toString(): 0,
   };
   
+  // Coding stats
+  int _totalLinesOfCodeWritten = 0;
+  int _codeErrorsCount = 0;
+  double _typingAccuracy = 100.0; // % of typing accuracy
+  
   // Powerups and interactions
   Map<PowerupType, bool> _availablePowerups = {
     PowerupType.askColleague: true,
@@ -72,6 +77,9 @@ class GameStateProvider with ChangeNotifier {
   int get remainingSeconds => _remainingSeconds;
   Map<PowerupType, bool> get availablePowerups => _availablePowerups;
   Location get currentLocation => _currentLocation;
+  int get totalLinesOfCodeWritten => _totalLinesOfCodeWritten;
+  int get codeErrorsCount => _codeErrorsCount;
+  double get typingAccuracy => _typingAccuracy;
   
   // Initialize game state from shared preferences
   Future<void> initialize() async {
@@ -126,6 +134,11 @@ class GameStateProvider with ChangeNotifier {
             entry.key: DateTime.parse(entry.value as String)
         };
       }
+      
+      // Load coding stats
+      _totalLinesOfCodeWritten = prefs.getInt('totalLinesOfCodeWritten') ?? 0;
+      _codeErrorsCount = prefs.getInt('codeErrorsCount') ?? 0;
+      _typingAccuracy = prefs.getDouble('typingAccuracy') ?? 100.0;
     }
     
     notifyListeners();
@@ -165,6 +178,11 @@ class GameStateProvider with ChangeNotifier {
         entry.key: entry.value.toIso8601String()
     };
     prefs.setString('interactionCooldowns', jsonEncode(cooldownsMap));
+    
+    // Save coding stats
+    prefs.setInt('totalLinesOfCodeWritten', _totalLinesOfCodeWritten);
+    prefs.setInt('codeErrorsCount', _codeErrorsCount);
+    prefs.setDouble('typingAccuracy', _typingAccuracy);
   }
   
   // Check if a specific level is unlocked
@@ -236,17 +254,40 @@ class GameStateProvider with ChangeNotifier {
   }
   
   // Game mechanics
-  void updateCodeProgress(int keyPresses) {
-    // The amount of progress per key press depends on current energy level
-    double progressPerPress = (_energy / 100) * 0.2;
-    _codeProgress += progressPerPress * keyPresses;
+  
+  // Update code progress based on the code submitted
+  void updateCodeProgress(double amount) {
+    _codeProgress += amount;
     
     // Ensure progress doesn't exceed 100%
     if (_codeProgress > 100) _codeProgress = 100;
     
-    // Energy decreases with typing
-    _energy -= (keyPresses * 0.1);
+    saveState();
+    notifyListeners();
+  }
+  
+  // Record a successfully written line of code
+  void recordCodeWritten(int lineLength) {
+    _totalLinesOfCodeWritten += 1;
+    
+    // Typing longer code lines is more tiring
+    double energyDecrease = (lineLength / 20.0) * 0.5;
+    _energy -= energyDecrease;
     if (_energy < 0) _energy = 0;
+    
+    saveState();
+    notifyListeners();
+  }
+  
+  // Record a code error
+  void recordCodeError() {
+    _codeErrorsCount += 1;
+    
+    // Update typing accuracy
+    if (_totalLinesOfCodeWritten > 0) {
+      int totalAttempts = _totalLinesOfCodeWritten + _codeErrorsCount;
+      _typingAccuracy = (_totalLinesOfCodeWritten / totalAttempts) * 100;
+    }
     
     saveState();
     notifyListeners();
@@ -486,8 +527,26 @@ class GameStateProvider with ChangeNotifier {
       PowerupType.codeReview: true,
     };
     _interactionCooldowns = {};
+    _totalLinesOfCodeWritten = 0;
+    _codeErrorsCount = 0;
+    _typingAccuracy = 100.0;
     
     saveState();
     notifyListeners();
+  }
+  
+  // Get player statistics for current game
+  Map<String, dynamic> getGameStats() {
+    return {
+      'stage': _currentStage.toString().split('.').last,
+      'day': _currentDay,
+      'totalLinesOfCode': _totalLinesOfCodeWritten,
+      'codeErrors': _codeErrorsCount,
+      'typingAccuracy': _typingAccuracy.toStringAsFixed(1) + '%',
+      'remainingTime': '${(_remainingSeconds / 60).floor()}:${(_remainingSeconds % 60).toString().padLeft(2, '0')}',
+      'energy': _energy.toStringAsFixed(1) + '%',
+      'stress': _stress.toStringAsFixed(1) + '%',
+      'codeProgress': _codeProgress.toStringAsFixed(1) + '%',
+    };
   }
 }

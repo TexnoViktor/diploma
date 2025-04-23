@@ -5,24 +5,25 @@ class WorkplaceTab extends StatelessWidget {
   final bool isWorking;
   final bool coffeeBreakActive;
   final VoidCallback onStartWorking;
-  
+
   const WorkplaceTab({
     required this.eventLog,
     required this.isWorking,
     required this.coffeeBreakActive,
     required this.onStartWorking,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(16.0),
-      child: Row(  // Changed from Column to Row
+      child: Row(
+        // Changed from Column to Row
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Actions and event log on the left
           Expanded(
-            flex: 3,  // Take 60% of the space
+            flex: 3, // Take 60% of the space
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -34,15 +35,15 @@ class WorkplaceTab extends StatelessWidget {
                     backgroundColor: isWorking ? Colors.green : null,
                   ),
                   child: Text(
-                    isWorking 
-                      ? 'Працюю (Натискайте клавіші)' 
-                      : 'Почати писати код', 
+                    isWorking
+                        ? 'Працюю (Натискайте клавіші)'
+                        : 'Почати писати код',
                     style: TextStyle(fontSize: 16),
                   ),
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Event log
                 Expanded(
                   child: Card(
@@ -53,7 +54,8 @@ class WorkplaceTab extends StatelessWidget {
                         children: [
                           Text(
                             'Журнал подій:',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                           SizedBox(height: 10),
                           Expanded(
@@ -70,7 +72,7 @@ class WorkplaceTab extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 // Instructions
                 if (isWorking)
                   Padding(
@@ -81,25 +83,26 @@ class WorkplaceTab extends StatelessWidget {
                       style: TextStyle(fontStyle: FontStyle.italic),
                     ),
                   ),
-                
+
                 if (coffeeBreakActive)
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 8.0),
                     child: Text(
                       'Відпочиваємо... Перерва активна.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontStyle: FontStyle.italic, color: Colors.brown),
+                      style: TextStyle(
+                          fontStyle: FontStyle.italic, color: Colors.brown),
                     ),
                   ),
               ],
             ),
           ),
-          
-          SizedBox(width: 16),  // Space between actions and image
-          
+
+          SizedBox(width: 16), // Space between actions and image
+
           // Workplace image on the right
           Expanded(
-            flex: 2,  // Take 40% of the space
+            flex: 2, // Take 40% of the space
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),

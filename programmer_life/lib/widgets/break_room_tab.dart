@@ -11,6 +11,7 @@ class BreakRoomTab extends StatelessWidget {
   final bool coffeeBreakActive;
   final Function(String) addToEventLog;
   final GameStateProvider gameState;
+  final VoidCallback checkGameConditions;  // Додано callback для перевірки умов закінчення гри
   
   const BreakRoomTab({
     required this.onCoffeeBreak,
@@ -21,6 +22,7 @@ class BreakRoomTab extends StatelessWidget {
     required this.coffeeBreakActive,
     required this.addToEventLog,
     required this.gameState,
+    required this.checkGameConditions,  // Новий обов'язковий параметр
   });
   
   @override
@@ -67,7 +69,11 @@ class BreakRoomTab extends StatelessWidget {
                           Colors.brown,
                           'Відновлює енергію та зосередженість',
                           '+25% енергії, 15 секунд',
-                          onCoffeeBreak,
+                          () {
+                            onCoffeeBreak();
+                            // Перевірка умов закінчення гри після впливу бафу
+                            checkGameConditions();
+                          },
                         ),
                         
                         SizedBox(height: 10),
@@ -79,7 +85,11 @@ class BreakRoomTab extends StatelessWidget {
                           Colors.red,
                           'Швидкий заряд енергії, але підвищує стрес',
                           '+30% енергії, +15% стресу, 10 секунд',
-                          onEnergyDrink,
+                          () {
+                            onEnergyDrink();
+                            // Перевірка умов закінчення гри після впливу бафу
+                            checkGameConditions();
+                          },
                         ),
                         
                         SizedBox(height: 10),
@@ -91,7 +101,11 @@ class BreakRoomTab extends StatelessWidget {
                           Colors.green,
                           'Знижує рівень стресу, але забирає трохи енергії',
                           '-20% стресу, -5% енергії, 20 секунд',
-                          onMeditation,
+                          () {
+                            onMeditation();
+                            // Перевірка умов закінчення гри після впливу бафу
+                            checkGameConditions();
+                          },
                         ),
                         
                         SizedBox(height: 10),
@@ -103,7 +117,11 @@ class BreakRoomTab extends StatelessWidget {
                           Colors.orange,
                           'Швидкий перекус для додаткової енергії',
                           '+15% енергії, +5% стресу, 5 секунд',
-                          onSnack,
+                          () {
+                            onSnack();
+                            // Перевірка умов закінчення гри після впливу бафу
+                            checkGameConditions();
+                          },
                         ),
                         
                         SizedBox(height: 10),
@@ -115,7 +133,11 @@ class BreakRoomTab extends StatelessWidget {
                           Colors.blue,
                           'Значно відновлює енергію та знижує стрес',
                           '+35% енергії, -10% стресу, 30 секунд',
-                          onPowerNap,
+                          () {
+                            onPowerNap();
+                            // Перевірка умов закінчення гри після впливу бафу
+                            checkGameConditions();
+                          },
                         ),
                       ],
                     ),
