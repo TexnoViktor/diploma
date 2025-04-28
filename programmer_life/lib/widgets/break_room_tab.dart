@@ -156,14 +156,13 @@ class BreakRoomTab extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 image: DecorationImage(
                   image: AssetImage('assets/images/break_room.png'),
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                 ),
               ),
               alignment: Alignment.center,
               child: Stack(
                 children: [
                   Container(
-                    color: Colors.black.withOpacity(0.5),
                     width: double.infinity,
                     height: double.infinity,
                   ),
