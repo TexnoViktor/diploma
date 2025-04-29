@@ -817,32 +817,6 @@ class _GameScreenState extends State<GameScreen> with SingleTickerProviderStateM
                   
                   // Conference Room Tab with check game conditions
                   ConferenceRoomTab(
-                    onAskForHelp: () {
-                      final gameState = Provider.of<GameStateProvider>(context, listen: false);
-                      gameState.updateCodeProgress(15);
-                      gameState.updateStress(10);
-                      _addToEventLog('🧑‍💻 Ви попросили допомоги в колеги. +15% прогресу, +10% стресу.');
-                    },
-                    onHelpColleague: () {
-                      final gameState = Provider.of<GameStateProvider>(context, listen: false);
-                      gameState.updateCodeProgress(5);
-                      gameState.updateEnergy(-10);
-                      gameState.updateStress(-5);
-                      _addToEventLog('👨‍👩‍👧‍👦 Ви допомогли колезі. +5% прогресу, -10% енергії, -5% стресу.');
-                    },
-                    onCodeReview: () {
-                      final gameState = Provider.of<GameStateProvider>(context, listen: false);
-                      gameState.updateCodeProgress(10);
-                      gameState.updateStress(-10);
-                      _addToEventLog('📝 Ви провели code review. +10% прогресу, -10% стресу.');
-                    },
-                    onTeamMeeting: () {
-                      final gameState = Provider.of<GameStateProvider>(context, listen: false);
-                      gameState.updateCodeProgress(8);
-                      gameState.updateStress(5);
-                      gameState.updateEnergy(-8);
-                      _addToEventLog('👥 Ви взяли участь у командній нараді. +8% прогресу, +5% стресу, -8% енергії.');
-                    },
                     addToEventLog: _addToEventLog,
                     gameState: gameState,
                     checkGameConditions: _checkGameConditions,

@@ -445,7 +445,7 @@ class GameStateProvider with ChangeNotifier {
   
   // Location-specific functions
   
-  void drinkCoffee() {
+   void drinkCoffee() {
     if (!isInteractionOnCooldown('coffee')) {
       updateEnergy(25);
       setInteractionCooldown('coffee', 15); // 15 minutes cooldown

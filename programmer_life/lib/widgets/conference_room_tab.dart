@@ -2,34 +2,26 @@ import 'package:flutter/material.dart';
 import '../providers/game_state_provider.dart';
 
 class ConferenceRoomTab extends StatelessWidget {
-  final VoidCallback onAskForHelp;
-  final VoidCallback onHelpColleague;
-  final VoidCallback onCodeReview;
-  final VoidCallback onTeamMeeting;
   final Function(String) addToEventLog;
   final GameStateProvider gameState;
-  final VoidCallback checkGameConditions;  // Додано callback для перевірки умов закінчення гри
+  final VoidCallback checkGameConditions;
   
   const ConferenceRoomTab({
-    required this.onAskForHelp,
-    required this.onHelpColleague,
-    required this.onCodeReview,
-    required this.onTeamMeeting,
     required this.addToEventLog,
     required this.gameState,
-    required this.checkGameConditions,  // Новий обов'язковий параметр
+    required this.checkGameConditions,
   });
   
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(16.0),
-      child: Row(  // Changed from Column to Row
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Interaction options on the left
           Expanded(
-            flex: 3,  // Take 60% of the space
+            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -52,8 +44,9 @@ class ConferenceRoomTab extends StatelessWidget {
                         'Попросіть колег допомогти з вашим завданням',
                         '+15% прогресу, +10% стресу',
                         () {
-                          onAskForHelp();
-                          // Перевірка умов закінчення гри після впливу взаємодії
+                          // Використовуємо той самий пауерап, що і в меню паузи
+                          gameState.usePowerup(PowerupType.askColleague);
+                          addToEventLog('🧑‍💻 Ви попросили допомоги в колеги. +15% прогресу, +10% стресу.');
                           checkGameConditions();
                         },
                         gameState.availablePowerups[PowerupType.askColleague] ?? false,
@@ -69,11 +62,11 @@ class ConferenceRoomTab extends StatelessWidget {
                         'Допоможіть колезі з його завданням',
                         '+5% прогресу, -10% енергії, -5% стресу',
                         () {
-                          onHelpColleague();
-                          // Перевірка умов закінчення гри після впливу взаємодії
+                          gameState.helpColleague();
+                          addToEventLog('👨‍👩‍👧‍👦 Ви допомогли колезі. +5% прогресу, -10% енергії, -5% стресу.');
                           checkGameConditions();
                         },
-                        true, // Always available
+                        !gameState.isInteractionOnCooldown('helpColleague'),
                       ),
                       
                       SizedBox(height: 10),
@@ -86,8 +79,9 @@ class ConferenceRoomTab extends StatelessWidget {
                         'Проведіть code review проекту команди',
                         '+10% прогресу, -10% стресу',
                         () {
-                          onCodeReview();
-                          // Перевірка умов закінчення гри після впливу взаємодії
+                          // Використовуємо той самий пауерап, що і в меню паузи
+                          gameState.usePowerup(PowerupType.codeReview);
+                          addToEventLog('📝 Ви провели code review. +10% прогресу, -10% стресу.');
                           checkGameConditions();
                         },
                         gameState.availablePowerups[PowerupType.codeReview] ?? false,
@@ -103,11 +97,11 @@ class ConferenceRoomTab extends StatelessWidget {
                         'Візьміть участь у командній нараді',
                         '+8% прогресу, +5% стресу, -8% енергії',
                         () {
-                          onTeamMeeting();
-                          // Перевірка умов закінчення гри після впливу взаємодії
+                          gameState.attendMeeting();
+                          addToEventLog('👥 Ви взяли участь у командній нараді. +8% прогресу, +5% стресу, -8% енергії.');
                           checkGameConditions();
                         },
-                        true, // Always available
+                        !gameState.isInteractionOnCooldown('meeting'),
                       ),
                     ],
                   ),
@@ -133,7 +127,6 @@ class ConferenceRoomTab extends StatelessWidget {
               child: Stack(
                 children: [
                   Container(
-                    color: Colors.black.withOpacity(0.5),
                     width: double.infinity,
                     height: double.infinity,
                   ),
