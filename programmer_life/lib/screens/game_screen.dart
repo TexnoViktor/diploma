@@ -7,7 +7,6 @@ import '../providers/game_state_provider.dart';
 import '../widgets/resource_indicator.dart';
 import '../widgets/qte_dialog.dart';
 import '../widgets/pause_menu.dart';
-import '../widgets/workplace_tab.dart';
 import '../widgets/break_room_tab.dart';
 import '../widgets/conference_room_tab.dart';
 import '../widgets/coding_challenge.dart';
