@@ -65,16 +65,6 @@ class MainMenuScreen extends StatelessWidget {
             SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                _showSettingsDialog(context);
-              },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text('Налаштування', style: TextStyle(fontSize: 18)),
-            ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
                 _showResetProgressDialog(context);
               },
               style: ElevatedButton.styleFrom(
@@ -137,39 +127,6 @@ class MainMenuScreen extends StatelessWidget {
     );
   }
   
-  void _showSettingsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Налаштування'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SwitchListTile(
-              title: Text('Звукові ефекти'),
-              value: true, // Заглушка, потрібно замінити на реальне значення
-              onChanged: (value) {
-                // Заглушка, потрібно реалізувати
-              },
-            ),
-            SwitchListTile(
-              title: Text('Повноекранний режим'),
-              value: false, // Заглушка, потрібно замінити на реальне значення
-              onChanged: (value) {
-                // Заглушка, потрібно реалізувати
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Закрити'),
-          ),
-        ],
-      ),
-    );
-  }
   
   void _showResetProgressDialog(BuildContext context) {
     showDialog(
